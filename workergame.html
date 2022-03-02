@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+
+        <title>HTML5 Game</title>
+        <meta name="description" content="Worker game">
+        <meta name="Robert Sixto" content="[]">
+        <style>
+            html,body{
+                height: 100%;
+                width:  100%;
+               
+                padding: 0;
+                margin:  0;
+            }
+    
+
+        </style>
+    </head>
+    <body>
+
+        <canvas id = "canvas" style= ""></canvas>
+        <script type ="text/javascript" src = "workerGameClasses.js"></script>
+    <script>
+                //"use strict";
+    let canvas;
+    let ctx;
+    let centerX;
+    let centerY;
+    let workerButtonX;
+    let workerButtonY;
+    let secondsPassed = 0;
+    let oldTimeStamp = 0;
+    let numOfWorkers = 0;
+    let workers = [];
+    let dragging = false;
+    let selectedWorker;
+    let selectedX;
+    let selectedY;
+    let drawNames = false;
+    let workerCoin = 0;
+    
+
+    window.onload = init;
+
+    function init(){
+        // Get a reference to the canvas
+        setSize();
+        centerX = canvas.width/2;
+        centerY=canvas.height/2;
+        workerButtonX = centerX-200;
+        workerButtonY = centerY-150;
+        //createWorkers();
+       
+
+        window.requestAnimationFrame(mainLoop);
+    }
+/*    function createWorkers(){
+        
+        makeWorker();
+        makeWorker();
+        makeWorker();
+        makeSorcerer();
+        makeSorcerer();
+        makeSorcerer();
+        makeSorcerer();
+        
+    }
+*/
+    function makeWorker()
+    {
+        //console.log("added");
+        let swidth = Math.floor(Math.random()*(window.innerWidth-48));
+        let sheight = Math.floor(Math.random()*(window.innerHeight-48));
+        workers.push(new Worker(ctx, swidth, sheight, 0, 0 ));
+
+    }
+    function makeSorcerer()
+    {        
+            //console.log("added");
+        let swidth = Math.floor(Math.random()*(window.innerWidth-48));
+        let sheight = Math.floor(Math.random()*(window.innerHeight-48));
+        workers.push(new Sorcerer(ctx, swidth, sheight, 0, 0 ));
+    }
+
+    function mainLoop(timeStamp){
+        secondsPassed = (timeStamp - oldTimeStamp)/ 1000;
+        oldTimeStamp = timeStamp;
+       
+        detectCollisions();
+        draw()
+        window.requestAnimationFrame(mainLoop);
+    }
+
+    function draw()
+    {
+        flip();
+        drawButton();
+        drawText();
+        drawWorkers();
+        //console.log(workerCoin);
+    }
+    
+
+
+    function setSize(){
+        canvas = document.getElementById('canvas');
+        ctx = canvas.getContext('2d');
+        ctx.canvas.width  = window.innerWidth;
+        ctx.canvas.height = window.innerHeight;
+        //console.log( window.innerWidth);
+        //console.log(window.innerHeight);
+
+    }
+    function flip()
+    {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0,0, window.innerWidth, window.innerHeight);
+    }
+    function drawButton()
+    {
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 4;
+        ctx.moveTo(centerX-190,centerY-150);
+        ctx.lineTo(centerX+190, centerY-150);
+        ctx.quadraticCurveTo(centerX+200,centerY-150, centerX+200, centerY-140);
+        ctx.lineTo(centerX+200,centerY+40);
+        ctx.quadraticCurveTo(centerX+200, centerY +50, centerX+190, centerY+50);
+        ctx.lineTo(centerX -190, centerY + 50);
+        ctx.quadraticCurveTo(centerX -200, centerY+50, centerX -200, centerY+40);
+        ctx.lineTo(centerX-200,centerY-140);
+         ctx.quadraticCurveTo(centerX -200, centerY-150, centerX -190, centerY-150);
+        ctx.stroke();
+
+        ctx.fillStyle = 'red';
+        ctx.fill();
+        
+        //ctx.fillRect(centerX-200,centerY-150, 400,200);
+
+    }
+    function drawText()
+    {
+        ctx.beginPath();
+        ctx.fillStyle = 'white';
+        ctx.font = '40px courier';
+        ctx.textAlign="center";
+        ctx.textBaseline = "middle";
+        let rectHeight = 200;
+        let rectWidth = 400;
+        ctx.fillText('MAKE WORKER' , workerButtonX+(rectWidth/2),workerButtonY+(rectHeight/2));
+
+        ctx.font ='15px courier';
+        ctx.fillText("WORKERCOIN: " + workerCoin.toFixed(4),  workerButtonX+(rectWidth/2),workerButtonY+(rectHeight/1.5) )
+    }
+
+    function drawWorkers()
+    {
+       //workers[0].draw();
+       /*
+       for(let i = 0;i<workers.length; i++ );
+        {
+            workers[i].draw()
+        }
+        */
+
+    workers.forEach(element => {
+        element.update();
+        element.mine();
+        element.draw();
+        if(drawNames){
+        element.drawNameBox()
+        }});
+        //console.log(workers);
+    }
+
+
+    function detectCollisions(){
+        let worker1;
+        let worker2;
+        for(let i = 0; i<workers.length; i++)
+        {
+            worker1 = workers[i];
+            for(let k = i + 1; k < workers.length; k++)
+            {
+                worker2 = workers[k];
+                if(isColliding(worker1.x ,worker1.width ,worker1.y ,worker1.height ,worker2.x ,worker2.width ,worker2.y ,worker2.height))
+                {
+                    worker1.isColliding =true;
+                    worker2.isColliding = true;
+                    //console.log("collide!")
+                }
+            }
+        }
+    }
+    function detectMouseCollision(x,y)
+    {
+        let worker;
+         for(let i = 0; i <workers.length; i++)
+        {
+            worker = workers[i];
+            if (isColliding(x,0,y,0,worker.x, worker.width, worker.y, worker.height))
+            {
+                return worker;
+            }
+        }   
+}
+
+    function isColliding(x1,width1,y1,height1,x2,width2, y2, height2)
+    {
+        if (x1>(x2+width2) || x2 >(x1+width1) || y1>(y2+height2) || y2 > (y1+height1))
+        {
+            return false;
+        }
+        return true;
+    
+    }
+
+    function makeButtonCollision(x,y)
+    {
+        if(isColliding(x,0,y,0, workerButtonX, 400, workerButtonY, 200))
+        {
+            makeWorker();
+        }
+    }
+    
+    function milkWorkers()
+    {
+        for(let i =0; i<workers.length;i++)
+        {
+            workerCoin += workers[i].mine();
+        }
+    }
+
+    window.setInterval(milkWorkers, 1000);
+
+
+        //event listners
+        window.addEventListener('mousedown',e => {
+            selectedX = e.offsetX;
+            selectedY = e.offsetY;
+            selectedWorker=detectMouseCollision(selectedX, selectedY);
+            if (selectedWorker)
+            {
+                dragging = true;
+            }
+            else{
+                dragging = false;
+                makeButtonCollision(selectedX, selectedY);
+                
+            }
+
+        });
+
+                    
+        window.addEventListener('mousemove', e =>{
+            if (dragging)
+            {
+                selectedWorker.x = selectedX-24;
+                selectedWorker.y = selectedY-24;
+                selectedX = e.offsetX;
+                selectedY = e.offsetY;
+            }
+        });
+
+        window.addEventListener('mouseup', e=> {
+            if (selectedWorker.isColliding){
+                levelUp();
+            }
+
+                selectedWorker = null;
+                dragging = false;
+                selectedX = 0;
+                selectedY = 0;
+
+            });
+        window.addEventListener('keydown', keyDown);
+
+        function keyDown(e)
+        {
+            if (e.keyCode == 67)
+            {
+                drawNames = !drawNames;
+            }
+        }
+    
+        function levelUp(){
+            let deleteIndex;
+            let levelUpIndex;
+            let delAndLev = false;
+            let worker;
+            let level;
+            for(let i = 0; i<workers.length; i++)
+            {
+                worker = workers[i];
+                if(!(selectedWorker===worker)){
+                    if(isColliding(selectedWorker.x ,selectedWorker.width ,selectedWorker.y , selectedWorker.height ,worker.x ,worker.width ,worker.y ,worker.height))
+                    {
+                        if(selectedWorker.name == worker.name && worker.name !="worker")
+                        {
+                            levelUpIndex = i;
+                            delAndLev = true;
+                            
+                        }
+                    }
+                    
+                }
+                else{
+                    deleteIndex = i;
+
+                }
+
+                }
+                if(delAndLev){
+                    level = workers[levelUpIndex].level+selectedWorker.level;
+                    if(level <= 15){
+                        workers[levelUpIndex].level = level;
+                        workers.splice(deleteIndex, 1);
+
+                    }
+                }
+
+        }
+    
+
+        </script>
+    
+    </body>
+</html>
