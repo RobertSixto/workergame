@@ -1,5 +1,5 @@
 # workergame
-A resource generation game I am developing.
+A resource generation javascript game I am developing .(Playable)
 
 Controls: 
 Press the "create worker" button to create a worker. 
